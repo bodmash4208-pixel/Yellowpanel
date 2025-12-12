@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Awareness Device Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;}
+    html{scroll-behavior:smooth;}
+    body{background:#f1f1f1;color:#000;}
+
+    .hidden{display:none !important;}
+
+    /* ---------- TOP BAR ---------- */
+    .top-bar{
+      background:#fff;
+      border-bottom:1px solid #bdbdbd;
+      padding:6px 12px 4px;
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+    .top-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:2px;
+    }
+    #device-count{
+      font-weight:600;
+      font-size:13px;
+    }
+    .net-wrapper{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    #net-canvas{
+      border:none;
+      border-radius:3px;
+      background:#f7f7f7;
+      display:block;
+    }
+    #net-text{
+      text-align:center;
+      font-size:12px;
+      margin-top:1px;
+    }
+
+    /* ---------- SEARCH (both pages) ---------- */
+    .search-box{
+      margin:8px;
+      background:#fff;
+      border:1px solid #000;
+      border-radius:4px;
+      padding:7px 10px;
+      display:flex;
+      align-items:center;
+    }
+    .search-box input{
+      border:none;
+      outline:none;
+      flex:1;
+      font-size:14px;
+      background:#fff;
+    }
+    .search-box span{font-size:20px;margin-left:6px;}
+
+    /* ---------- DEVICE LIST VIEW ---------- */
+    .device-list{padding-bottom:20px;}
+    .device-card{
+      display:flex;
+      background:#fff;
+      border-radius:6px;
+      border:1px solid #ccc;
+      padding:10px;
+      margin:8px;
+      cursor:pointer;
+      transition:transform .15s,box-shadow .15s;
+    }
+    .device-card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 3px 7px rgba(0,0,0,.15);
+    }
+    .device-thumb{
+      width:48px;
+      height:90px;
+      margin-right:10px;
+      border-radius:4px;
+      border:1px solid #777;
+      background:linear-gradient(160deg,#83d6ff,#ff81d4);
+      flex-shrink:0;
+    }
+    .device-info{flex:1;}
+    .device-info p{font-size:13px;margin-bottom:2px;}
+    .date-text{font-size:11px;color:#555;}
+
+    .battery-text{font-weight:600;}
+    .battery-online{color:#00c000;font-weight:bold;}
+    .battery-offline{color:#d00000;font-weight:bold;}
+
+    .status{font-weight:700;margin-top:4px;}
+    .status-online{
+      color:#00c000;
+      animation:pulseOnline 1.2s ease-in-out infinite;
+    }
+    .status-offline{color:#ff0000;}
+
+    @keyframes pulseOnline{
+      0%,100%{text-shadow:0 0 0 rgba(0,255,0,.7);}
+      50%{text-shadow:0 0 6px rgba(0,255,0,1);}
+    }
+
+    .card-actions{
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      gap:6px;
+      margin-left:10px;
+    }
+    .btn-icon{
+      width:28px;
+      height:28px;
+      font-size:14px;
+      color:#fff;
+      background:#000;
+      border:none;
+      border-radius:50%;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .btn-icon:active{transform:scale(.9);}
+
+    /* ---------- DISCLAIMER POPUP ---------- */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:10;
+    }
+    .dialog{
+      background:#fff;
+      width:80%;
+      max-width:700px;
+      padding:25px;
+      border-radius:6px;
+      font-size:14px;
+      line-height:1.5;
+    }
+    .dialog-title{font-size:18px;font-weight:700;margin-bottom:12px;}
+    .dialog-footer{margin-top:16px;display:flex;justify-content:flex-end;gap:18px;}
+    .agree-btn{
+      background:#000;
+      color:#fff;
+      border:none;
+      padding:6px 16px;
+      border-radius:3px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    /* ---------- DEVICE DETAIL PAGE (yellow) ---------- */
+    #detail-view{
+      position:fixed;
+      inset:0;
+      background:#f4b422;
+      z-index:8;
+      overflow:auto;
+    }
+    .detail-inner{
+      padding:8px 12px 20px;
+    }
+    .detail-header-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .detail-left{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:16px;
+      font-weight:600;
+    }
+    .detail-back{
+      font-size:20px;
+      cursor:pointer;
+    }
+    .detail-timeout{
+      font-size:12px;
+      color:#b70000;
+      margin-left:6px;
+    }
+    .detail-icons{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:18px;
+      cursor:pointer;
+    }
+
+    .detail-info{
+      font-size:13px;
+      margin-bottom:10px;
+    }
+    .detail-info-title{
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+
+    .detail-input{
+      width:100%;
+      padding:7px 8px;
+      border-radius:4px;
+      border:1px solid #000;
+      font-size:13px;
+      margin-bottom:6px;
+      outline:none;
+      background:#fff;
+    }
+
+    .detail-row-buttons{
+      display:flex;
+      gap:6px;
+      margin-bottom:6px;
+    }
+    .btn-black{
+      flex:1;
+      background:#000;
+      color:#fff;
+      border:none;
+      padding:8px 10px;
+      font-size:13px;
+      border-radius:4px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    .detail-row-update{
+      display:flex;
+      gap:6px;
+      margin-bottom:6px;
+    }
+    .detail-row-update input{
+      flex:1;
+    }
+    .btn-update{
+      background:#000;
+      color:#fff;
+      border:none;
+      padding:8px 15px;
+      font-size:13px;
+      border-radius:4px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    /* ---------- SMS LIST (yellow page) ---------- */
+    .sms-list{
+      margin-top:4px;
+      margin-bottom:20px;
+    }
+    .sms-card{
+      background:#f4b422;
+      border:1px solid #000;
+      border-radius:4px;
+      padding:8px 10px;
+      margin:6px 0;
+      display:flex;
+    }
+    .sms-main{flex:1;}
+    .sms-body{
+      font-size:13px;
+      color:#00b000;   /* light green text */
+      font-weight:600;
+      white-space:pre-line;
+      margin-bottom:4px;
+    }
+    .sms-meta{
+      font-size:11px;
+      color:#000;
+    }
+    .sms-actions{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-left:8px;
+    }
+    .sms-btn{
+      width:26px;
+      height:26px;
+      border:none;
+      border-radius:4px;
+      background:#000;
+      color:#fff;
+      cursor:pointer;
+      font-size:15px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    @media (max-width:600px){
+      .device-card{padding:8px;}
+      .device-thumb{height:80px;}
+      #net-canvas{width:120px;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- DISCLAIMER FIRST -->
+  <div id="disclaimer-box" class="overlay">
+    <div class="dialog">
+      <div class="dialog-title">Disclaimer</div>
+      <p>
+        This application is designed only for educational &amp; cyber awareness purposes.
+        We do not promote any illegal or unethical activities. You agree to use it
+        responsibly and within the bounds of the law.
+      </p>
+
+      <div class="dialog-footer">
+        <button class="agree-btn" onclick="acceptDisclaimer()">AGREE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN UI -->
+  <div id="main-page" class="hidden">
+
+    <!-- LIST VIEW -->
+    <div id="list-view">
+      <div class="top-bar">
+        <div class="top-row">
+          <div id="device-count">Device Count : 0</div>
+
+          <div class="net-wrapper">
+            <canvas id="net-canvas" width="160" height="26"></canvas>
+          </div>
+        </div>
+        <div id="net-text">Sent: 0 B | Received: 0 B</div>
+      </div>
+
+      <div class="search-box">
+        <input id="search-input" type="text" placeholder="Search Here">
+        <span>🔍</span>
+      </div>
+
+      <div id="device-list" class="device-list"></div>
+    </div>
+
+    <!-- DETAIL VIEW (yellow page) -->
+    <div id="detail-view" class="hidden">
+      <div class="detail-inner">
+        <div class="detail-header-top">
+          <div class="detail-left">
+            <span class="detail-back" onclick="closeDetails()">←</span>
+            <span>Device Details</span>
+            <span class="detail-timeout">Timeout &gt; 5000ms</span>
+          </div>
+          <div class="detail-icons">
+            <span>🔍</span>
+            <span>⇅</span>
+            <span>📋</span>
+          </div>
+        </div>
+
+        <div class="detail-info">
+          <div id="detail-model" class="detail-info-title">MODEL</div>
+          <div id="detail-phone">Phone: N/A</div>
+          <div id="detail-sim1">Sim1: N/A</div>
+          <div id="detail-sim2">Sim2: N/A</div>
+          <div id="detail-upi">UPI Pin: N/A</div>
+          <div id="detail-date">Date: --/--/---- | --:--</div>
+        </div>
+
+        <input id="input-recipient" class="detail-input" placeholder="Enter Recipient Phone No.">
+        <input id="input-message" class="detail-input" placeholder="Enter Message To Send.">
+
+        <div class="detail-row-buttons">
+          <button class="btn-black">SIM1</button>
+          <button class="btn-black">SIM2</button>
+        </div>
+
+        <div class="detail-row-update">
+          <input id="input-status" class="detail-input" placeholder="Enter Update Status">
+          <button class="btn-update">UPDATE</button>
+        </div>
+
+        <!-- SMS search on detail page -->
+        <div class="search-box" style="margin-top:4px;">
+          <input id="sms-search" type="text" placeholder="Search Here">
+          <span>🔍</span>
+        </div>
+
+        <!-- SMS list -->
+        <div id="sms-list" class="sms-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  // ================= GLOBALS =================
+  let RAW_CLIENTS = {};       // Will be populated with 210 mock devices
+  let DEVICE_IDS = [];        // all deviceIds
+  let currentDeviceId = null; // which device is open
+  let currentSmsArray = [];   // messages array for open device
+  let smsPage = 0;
+  const SMS_PAGE_SIZE = 6;
+  const TOTAL_DEVICES = 210;  // Fixed count of 210 devices
+
+  const listView   = document.getElementById("list-view");
+  const detailView = document.getElementById("detail-view");
+  const deviceListEl = document.getElementById("device-list");
+  const deviceCountEl = document.getElementById("device-count");
+  const smsListEl  = document.getElementById("sms-list");
+  const smsSearch  = document.getElementById("sms-search");
+
+  const detailModel = document.getElementById("detail-model");
+  const detailPhone = document.getElementById("detail-phone");
+  const detailSim1  = document.getElementById("detail-sim1");
+  const detailSim2  = document.getElementById("detail-sim2");
+  const detailUpi   = document.getElementById("detail-upi");
+  const detailDate  = document.getElementById("detail-date");
+
+  // ================= MOCK DATA GENERATION (INDIAN ONLY) =================
+  const indianModels = [
+    'iPhone 15 Pro', 'Samsung Galaxy S24', 'Google Pixel 8', 'OnePlus 12', 
+    'Xiaomi 13T Pro', 'Realme GT 5 Pro', 'Oppo Reno 11 Pro', 'Vivo X100',
+    'iQOO 12 Pro', 'Nothing Phone (2)', 'Motorola Edge 40 Pro', 'Poco F5 Pro',
+    'Redmi Note 13 Pro+', 'Samsung Galaxy A54', 'iPhone 14', 'Samsung Galaxy S23',
+    'Xiaomi 14', 'Realme 12 Pro+', 'Oppo Find X7', 'Vivo V30 Pro', 'iPhone 13',
+    'Samsung Galaxy A34', 'Redmi Note 12 Pro', 'Poco X5 Pro', 'Nothing Phone (1)'
+  ];
+  
+  const indianCarriers = ['Airtel', 'Jio', 'Vodafone Idea', 'BSNL'];
+  
+  const indianCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana'];
+  
+  // Function to generate random Indian phone number (10 digits, starting with 6-9)
+  function generateIndianPhoneNumber() {
+    const firstDigit = ['6', '7', '8', '9'][Math.floor(Math.random() * 4)];
+    const remainingDigits = Math.floor(100000000 + Math.random() * 900000000).toString();
+    return '+91' + firstDigit + remainingDigits.substring(0, 9);
+  }
+  
+  // Function to generate random date (last 30 days)
+  function generateRandomDate() {
+    const now = new Date();
+    const daysAgo = Math.floor(Math.random() * 30);
+    const randomDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+    const hours = String(randomDate.getHours()).padStart(2, '0');
+    const minutes = String(randomDate.getMinutes()).padStart(2, '0');
+    const day = String(randomDate.getDate()).padStart(2, '0');
+    const month = String(randomDate.getMonth() + 1).padStart(2, '0');
+    const year = randomDate.getFullYear();
+    return `${day}/${month}/${year} | ${hours}:${minutes}`;
+  }
+  
+  // Function to generate random battery percentage
+  function generateBattery() {
+    return Math.floor(10 + Math.random() * 90) + '%';
+  }
+  
+  // Function to determine online/offline status (65% online, 35% offline)
+  function isOnline() {
+    return Math.random() < 0.65;
+  }
+  
+  // Function to generate realistic Indian SMS messages
+  function generateIndianSMSMessages() {
+    const messages = {};
+    const msgCount = Math.floor(Math.random() * 4) + 1; // 1-4 messages
+    const indianSenders = [
+      'HDFC Bank', 'SBI', 'ICICI Bank', 'Axis Bank', 'Amazon.in', 'Flipkart', 
+      'Swiggy', 'Zomato', 'IRCTC', 'Airtel', 'Jio', 'Vodafone', 'Paytm', 'PhonePe',
+      'Uber', 'Ola', 'BookMyShow', 'Netflix', 'Disney+ Hotstar', 'BigBasket',
+      'Myntra', 'Ajio', 'Nykaa', '1mg', 'PharmEasy', 'CRED', 'Bajaj Finserv'
+    ];
+    
+    const messageTemplates = [
+      // Banking messages
+      'Dear Customer, your A/c XX{last4} is debited with Rs.{amount} on {date}. Avl Bal: Rs.{balance}.-HDFC Bank',
+      'Rs.{amount} credited to your A/c XX{last4} on {date}. Avl Bal: Rs.{balance}.-SBI',
+      'Your HDFC Bank Credit Card XX{last4} has been charged Rs.{amount} at {merchant} on {date}.',
+      'OTP for transaction of Rs.{amount} is {otp}. Do not share OTP with anyone.-ICICI Bank',
+      
+      // E-commerce
+      'Your Flipkart order #{order} of Rs.{amount} is confirmed! Expected delivery: {deliveryDate}. Track: fkrt.it/{tracking}',
+      'Amazon.in: Your order #{order} has been shipped! Track: amzn.in/{tracking}',
+      'Swiggy: Your order #{order} is on the way! Estimated delivery in {minutes} mins.',
+      'Zomato: Thank you for your order! Your food will arrive in {minutes} minutes.',
+      
+      // Travel
+      'IRCTC: Your ticket for train {train} from {from} to {to} on {date} is confirmed. PNR: {pnr}',
+      'BookMyShow: Your tickets for {movie} at {theater} on {date} are confirmed. Booking ID: {bookingId}',
+      
+      // Telecom
+      'Airtel: Your prepaid account has been recharged with Rs.{amount}. Validity: {validity} days.',
+      'Jio: Your data balance is {data} GB. Recharge now to continue uninterrupted service.',
+      'Vodafone Idea: Your main balance is Rs.{balance}. Valid till {validity}.',
+      
+      // UPI/Payment
+      'PhonePe: Payment of Rs.{amount} to {merchant} successful. Ref ID: {refId}',
+      'Paytm: Rs.{amount} sent to {recipient} via UPI. Transaction ID: {txnId}',
+      
+      // Entertainment
+      'Netflix: Your subscription has been renewed for Rs.{amount}. Next billing on {date}.',
+      'Disney+ Hotstar: Your premium plan has been activated. Enjoy ad-free streaming!',
+      
+      // Healthcare
+      '1mg: Your medicine order #{order} is confirmed. Delivery by {deliveryDate}.',
+      'PharmEasy: Prescription medicines order #{order} shipped! Track your order.',
+      
+      // Fashion
+      'Myntra: Your order #{order} of Rs.{amount} is confirmed! Expected delivery: {deliveryDate}.',
+      'Ajio: Style alert! Your order #{order} is on the way.',
+      
+      // Beauty
+      'Nykaa: Your beauty order #{order} is confirmed. Get ready to glam up!',
+      
+      // Finance
+      'CRED: You have a credit card bill of Rs.{amount} due on {date}. Pay now!',
+      'Bajaj Finserv: Your EMI of Rs.{amount} is due today. Pay now to avoid late fees.'
+    ];
+    
+    for (let i = 0; i < msgCount; i++) {
+      const template = messageTemplates[Math.floor(Math.random() * messageTemplates.length)];
+      const sender = indianSenders[Math.floor(Math.random() * indianSenders.length)];
+      let filledMessage = template;
+      
+      // Replace placeholders with realistic Indian values
+      filledMessage = filledMessage
+        .replace(/{amount}/g, (Math.floor(10 + Math.random() * 50000)).toLocaleString('en-IN'))
+        .replace(/{balance}/g, (Math.floor(100 + Math.random() * 100000)).toLocaleString('en-IN'))
+        .replace(/{last4}/g, Math.floor(1000 + Math.random() * 9000))
+        .replace(/{otp}/g, Math.floor(100000 + Math.random() * 900000))
+        .replace(/{order}/g, Math.floor(10000000 + Math.random() * 90000000))
+        .replace(/{deliveryDate}/g, `${Math.floor(10 + Math.random() * 20)}/12/2025`)
+        .replace(/{tracking}/g, Math.floor(100000 + Math.random() * 900000).toString(36))
+        .replace(/{minutes}/g, Math.floor(15 + Math.random() * 45))
+        .replace(/{train}/g, ['12951', '12302', '12622', '12045', '22625', '12845', '12727', '12011'][Math.floor(Math.random() * 8)])
+        .replace(/{from}/g, indianCities[Math.floor(Math.random() * indianCities.length)])
+        .replace(/{to}/g, indianCities[Math.floor(Math.random() * indianCities.length)])
+        .replace(/{date}/g, `${Math.floor(10 + Math.random() * 20)}/12/2025`)
+        .replace(/{pnr}/g, Math.floor(1000000000 + Math.random() * 9000000000))
+        .replace(/{movie}/g, ['Pathaan', 'Jawan', 'Animal', 'Pushpa 2', 'Salaar', 'Kalki 2898 AD', 'Devara', 'Tiger 3'][Math.floor(Math.random() * 8)])
+        .replace(/{theater}/g, ['PVR', 'INOX', 'Cinepolis', 'Miraj Cinemas', 'Carnival Cinemas'][Math.floor(Math.random() * 5)])
+        .replace(/{bookingId}/g, 'BMS' + Math.floor(1000000 + Math.random() * 9000000))
+        .replace(/{validity}/g, Math.floor(28 + Math.random() * 60))
+        .replace(/{data}/g, (Math.random() * 10).toFixed(2))
+        .replace(/{merchant}/g, ['Amazon.in', 'Flipkart', 'Swiggy', 'Zomato', 'BigBasket', 'Myntra', 'Ajio'][Math.floor(Math.random() * 7)])
+        .replace(/{refId}/g, 'PP' + Math.floor(10000000000 + Math.random() * 90000000000))
+        .replace(/{txnId}/g, 'PTM' + Math.floor(10000000000 + Math.random() * 90000000000))
+        .replace(/{recipient}/g, indianCities[Math.floor(Math.random() * indianCities.length)] + ' user')
+        .replace(/{month}/g, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Math.floor(Math.random() * 12)]);
+
+      messages[`msg_${i+1}`] = {
+        id: i+1,
+        sender: sender,
+        message: filledMessage,
+        dateTime: generateRandomDate(),
+        type: 'inbox'
+      };
+    }
+    return messages;
+  }
+  
+  // Function to generate a single Indian device
+  function generateIndianDevice(deviceId) {
+    const status = isOnline();
+    const hasDualSIM = Math.random() < 0.25; // 25% chance of dual SIM (realistic for India)
+    
+    return {
+      mobNo: generateIndianPhoneNumber(),
+      modelName: indianModels[Math.floor(Math.random() * indianModels.length)],
+      battery: generateBattery(),
+      joined: generateRandomDate(),
+      status: status,
+      sims: hasDualSIM 
+        ? [
+            { carrierName: indianCarriers[Math.floor(Math.random() * indianCarriers.length)], phoneNumber: generateIndianPhoneNumber() },
+            { carrierName: indianCarriers[Math.floor(Math.random() * indianCarriers.length)], phoneNumber: generateIndianPhoneNumber() }
+          ]
+        : [
+            { carrierName: indianCarriers[Math.floor(Math.random() * indianCarriers.length)], phoneNumber: generateIndianPhoneNumber() }
+          ],
+      messages: generateIndianSMSMessages()
+    };
+  }
+
+  // ================= DISCLAIMER =================
+  function acceptDisclaimer(){
+    document.getElementById("disclaimer-box").classList.add("hidden");
+    document.getElementById("main-page").classList.remove("hidden");
+    
+    // Load exactly 210 devices
+    load210Devices();
+  }
+
+  // ================= NETWORK TEXT =================
+  const netTextEl = document.getElementById("net-text");
+  let sentBytes = 0;
+  let recvBytes = 0;
+
+  function formatBytes(bytes){
+    if(bytes < 1024) return bytes + " B";
+    let kb = bytes/1024;
+    if(kb < 1024) return kb.toFixed(1) + " KB";
+    let mb = kb/1024;
+    return mb.toFixed(2) + " MB";
+  }
+
+  function updateNetTraffic(){
+    sentBytes += Math.floor(Math.random()*50000);
+    recvBytes += Math.floor(Math.random()*80000);
+    netTextEl.textContent = "Sent: " + formatBytes(sentBytes) +
+                            " | Received: " + formatBytes(recvBytes);
+  }
+  setInterval(updateNetTraffic, 1000);
+
+  // ================= TOP GREEN GRAPH =================
+  const canvas = document.getElementById("net-canvas");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  let points = [];
+  for(let x=0;x<w;x++) points.push(h/2);
+
+  function addPoint(){
+    const last = points[points.length-1];
+    let next = last + (Math.random()*10-5);
+    if(next < 4) next = 4;
+    if(next > h-4) next = h-4;
+    points.push(next);
+    if(points.length> w) points.shift();
+  }
+
+  function drawGraph(){
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#f7f7f7";
+    ctx.fillRect(0,0,w,h);
+
+    ctx.strokeStyle="#cccccc";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(0,h/2);
+    ctx.lineTo(w,h/2);
+    ctx.stroke();
+
+    ctx.strokeStyle="#00c500";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    for(let x=0;x<points.length;x++){
+      const y=points[x];
+      if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  drawGraph();
+  setInterval(()=>{addPoint();drawGraph();},80);
+
+  // ================= LOAD EXACTLY 210 DEVICES =================
+  function load210Devices() {
+    const fragment = document.createDocumentFragment();
+    
+    for (let i = 0; i < TOTAL_DEVICES; i++) {
+      const deviceId = `device_${i + 1}`;
+      RAW_CLIENTS[deviceId] = generateIndianDevice(deviceId);
+      DEVICE_IDS.push(deviceId);
+      
+      // Create device card
+      const c = RAW_CLIENTS[deviceId];
+      const phone = c.mobNo || "N/A";
+      const model = c.modelName || "N/A";
+      const battery = c.battery || "N/A";
+      const joined = c.joined || "Recent";
+      const statusBool = !!c.status;
+      const statusText = statusBool ? "Online" : "Offline";
+      const statusClass = statusBool ? "status-online" : "status-offline";
+      const batteryClass = statusBool ? "battery-online" : "battery-offline";
+
+      const card = document.createElement("div");
+      card.className = "device-card";
+      card.dataset.deviceId = deviceId;
+
+      card.innerHTML = `
+        <div class="device-thumb"></div>
+        <div class="device-info">
+          <p><b>Phone:</b> ${phone}</p>
+          <p><b>UPI Pin:</b> N/A</p>
+          <p><b>Model:</b> ${model}</p>
+          <p><b>Battery:</b> <span class="battery-text ${batteryClass}">${battery}</span></p>
+          <p class="date-text">Date: ${joined}</p>
+          <p class="status ${statusClass}">Status: ${statusText}</p>
+        </div>
+        <div class="card-actions">
+          <button class="btn-icon">★</button>
+          <button class="btn-icon info-btn">i</button>
+          <button class="btn-icon">🗑</button>
+        </div>
+      `;
+
+      // pure card click
+      card.addEventListener("click", () => openDetails(deviceId));
+
+      // info button only
+      card.querySelector(".info-btn").addEventListener("click", (e)=>{
+        e.stopPropagation();
+        openDetails(deviceId);
+      });
+
+      fragment.appendChild(card);
+    }
+    
+    deviceListEl.appendChild(fragment);
+    deviceCountEl.textContent = "Device Count : " + TOTAL_DEVICES;
+  }
+  
+  // ================= SEARCH (device list) =================
+  const searchInput = document.getElementById("search-input");
+  searchInput.addEventListener("input", ()=>{
+    const q = searchInput.value.toLowerCase();
+    document.querySelectorAll(".device-card").forEach(card=>{
+      const id = card.dataset.deviceId.toLowerCase();
+      const text = card.innerText.toLowerCase();
+      card.style.display = (id.includes(q) || text.includes(q)) ? "flex" : "none";
+    });
+  });
+
+  // ================= DETAIL VIEW + SMS =================
+  function openDetails(deviceId){
+    currentDeviceId = deviceId;
+    const c = RAW_CLIENTS[deviceId] || {};
+    const phone = c.mobNo || "N/A";
+    const model = c.modelName || "N/A";
+    const sims  = c.sims || [];
+    const sim1  = sims[0] ? `${sims[0].carrierName} - ${sims[0].phoneNumber}` : "N/A";
+    const sim2  = sims[1] ? `${sims[1].carrierName} - ${sims[1].phoneNumber}` : "Not Available";
+    const joined = c.joined || "Recent";
+
+    detailModel.textContent = model;
+    detailPhone.textContent = "Phone: " + phone;
+    detailSim1.textContent  = "Sim1: " + sim1;
+    detailSim2.textContent  = "Sim2: " + sim2;
+    detailUpi.textContent   = "UPI Pin: N/A";
+    detailDate.textContent  = "Date: " + joined;
+
+    // SMS array banaye (messages object se)
+    const msgsObj = c.messages || {};
+    currentSmsArray = Object.values(msgsObj);
+
+    // date/id ke hisab se sort (oldest->newest)
+    currentSmsArray.sort((a,b)=> (a.id||0) - (b.id||0));
+
+    smsPage = 0;
+    smsListEl.innerHTML = "";
+    loadMoreSMS();
+
+    listView.classList.add("hidden");
+    detailView.classList.remove("hidden");
+  }
+
+  function closeDetails(){
+    detailView.classList.add("hidden");
+    listView.classList.remove("hidden");
+  }
+
+  function createSmsCard(msg){
+    const card = document.createElement("div");
+    card.className = "sms-card";
+
+    const main = document.createElement("div");
+    main.className = "sms-main";
+
+    const body = document.createElement("div");
+    body.className = "sms-body";
+    body.textContent = msg.message || msg.body || "";
+
+    const meta = document.createElement("div");
+    meta.className = "sms-meta";
+    meta.textContent =
+      `Sender: ${msg.sender || "Unknown"} | Date: ${msg.dateTime || ""} | Type: ${msg.type || ""}`;
+
+    main.appendChild(body);
+    main.appendChild(meta);
+
+    const actions = document.createElement("div");
+    actions.className = "sms-actions";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "sms-btn";
+    copyBtn.textContent = "📋";
+    copyBtn.title = "Copy";
+    copyBtn.onclick = () => {
+      if(navigator.clipboard){
+        navigator.clipboard.writeText(body.textContent).catch(()=>{});
+      }
+    };
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "sms-btn";
+    delBtn.textContent = "🗑";
+    delBtn.title = "Delete (UI only)";
+    delBtn.onclick = () => card.remove();
+
+    actions.appendChild(copyBtn);
+    actions.appendChild(delBtn);
+
+    card.appendChild(main);
+    card.appendChild(actions);
+    return card;
+  }
+
+  function loadMoreSMS(){
+    if(!currentDeviceId) return;
+    const start = smsPage * SMS_PAGE_SIZE;
+    if(start >= currentSmsArray.length) return;
+
+    const end = Math.min(start + SMS_PAGE_SIZE, currentSmsArray.length);
+    for(let i=start;i<end;i++){
+      smsListEl.appendChild(createSmsCard(currentSmsArray[i]));
+    }
+    smsPage++;
+  }
+
+  // detail-view pe scroll => aur SMS load
+  detailView.addEventListener("scroll", ()=>{
+    if(detailView.scrollTop + detailView.clientHeight >= detailView.scrollHeight - 80){
+      loadMoreSMS();
+    }
+  });
+
+  // SMS search (already loaded SMS cards par)
+  smsSearch.addEventListener("input", ()=>{
+    const q = smsSearch.value.toLowerCase();
+    smsListEl.querySelectorAll(".sms-card").forEach(card=>{
+      card.style.display = card.innerText.toLowerCase().includes(q) ? "flex" : "none";
+    });
+  });
+</script>
+
+</body>
+</html>
+
